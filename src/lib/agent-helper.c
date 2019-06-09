@@ -37,6 +37,7 @@ static const gchar *_bt_agent_introspect_xml = "<node name=\"/org/blueztools\">\
 static guint _bt_agent_registration_id = 0;
 static GHashTable *_pin_hash_table = NULL;
 static gboolean _interactive = TRUE;
+static gboolean _deamonize = TRUE;
 static GMainLoop *_mainloop = NULL;
 
 static void _bt_agent_g_destroy_notify(gpointer data);
@@ -53,8 +54,8 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         Device *device_obj = device_new(g_variant_get_string(g_variant_get_child_value(parameters, 0), NULL));
         const char *uuid = g_variant_get_string(g_variant_get_child_value(parameters, 1), NULL);
 
-        if (_interactive)
-          g_print("Device: %s (%s) for UUID %s\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error), uuid);
+        if (!_deamonize)
+          g_print("AuthorizeService for Device: %s (%s) for UUID %s\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error), uuid);
 
         if (error)
         {
@@ -80,7 +81,7 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
     }
     else if (g_strcmp0(method_name, "Cancel") == 0)
     {
-        if (_interactive)
+        if (!_deamonize)
             g_print("Request canceled\n");
         // Return void
         g_dbus_method_invocation_return_value(invocation, NULL);
@@ -91,8 +92,8 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         Device *device_obj = device_new(g_variant_get_string(g_variant_get_child_value(parameters, 0), NULL));
         const gchar *pin = _find_device_pin(device_get_dbus_object_path(device_obj));
 
-        if (_interactive)
-            g_print("Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
+        if (!_deamonize)
+            g_print("DisplayPasskey for Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
 
         if (error)
         {
@@ -124,8 +125,8 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         const gchar *pin = _find_device_pin(device_get_dbus_object_path(device_obj));
         const gchar *pincode = g_variant_get_string(g_variant_get_child_value(parameters, 1), NULL);
 
-        if (_interactive)
-            g_print("Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
+        if (!_deamonize)
+            g_print("DisplayPinCode for Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
 
         if (error)
         {
@@ -140,7 +141,7 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         {
             if (g_strcmp0(pin, "*") == 0 || g_strcmp0(pin, pincode) == 0)
             {
-                if (_interactive)
+                if (!_deamonize)
                     g_print("Pin code confirmed\n");
                 g_dbus_method_invocation_return_value(invocation, NULL);
             }
@@ -184,8 +185,8 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         GError *error = NULL;
         Device *device_obj = device_new(g_variant_get_string(g_variant_get_child_value(parameters, 0), NULL));
 
-        if (_interactive)
-            g_print("Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
+        if (!_deamonize)
+            g_print("RequestAuthorization for Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
 
         if(error)
         {
@@ -218,8 +219,8 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         guint32 passkey = g_variant_get_uint32(g_variant_get_child_value(parameters, 1));
         const gchar *pin = _find_device_pin(device_get_dbus_object_path(device_obj));
 
-        if (_interactive)
-            g_print("Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
+        if (!_deamonize)
+            g_print("RequestConfirmation for Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
 
         if(error)
         {
@@ -237,7 +238,7 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
 
             if (g_strcmp0(pin, "*") == 0 || passkey_t == passkey)
             {
-                if (_interactive)
+                if (!_deamonize)
                     g_print("Passkey confirmed\n");
                 g_dbus_method_invocation_return_value(invocation, NULL);
             }
@@ -270,8 +271,8 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         guint32 ret = 0;
         gboolean invoke = FALSE;
 
-        if (_interactive)
-            g_print("Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
+        if (!_deamonize)
+            g_print("RequestPasskey for Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
 
         if(error)
         {
@@ -284,7 +285,7 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         /* Try to use found PIN */
         if (pin != NULL)
         {
-            if (_interactive)
+            if (!_deamonize)
                 g_print("Passkey found\n");
             sscanf(pin, "%u", &ret);
             invoke = TRUE;
@@ -296,6 +297,8 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
             if (scanf("%u", &ret) == EOF && errno)
                 g_warning("%s\n", strerror(errno));
             invoke = TRUE;
+        } else {
+            g_print("No passkey found\n");
         }
 
         if (invoke)
@@ -304,7 +307,7 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         }
         else
         {
-            g_dbus_method_invocation_return_dbus_error(invocation, "org.bluez.Error.Rejected", "No passkey inputted");
+            g_dbus_method_invocation_return_dbus_error(invocation, "org.bluez.Error.Rejected", "No passkey inputted or found in PIN's file");
         }
     }
     else if (g_strcmp0(method_name, "RequestPinCode") == 0)
@@ -315,8 +318,8 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         gchar *ret = NULL;
         gboolean invoke = FALSE;
 
-        if (_interactive)
-            g_print("Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
+        if (!_deamonize)
+            g_print("RequestPinCode for Device: %s (%s)\n", device_get_alias(device_obj, &error), device_get_address(device_obj, &error));
 
         if(error)
         {
@@ -329,7 +332,7 @@ static void _bt_agent_method_call_func(GDBusConnection *connection, const gchar 
         /* Try to use found PIN */
         if (pin != NULL)
         {
-            if (_interactive)
+            if (!_deamonize)
                 g_print("Passkey found\n");
             sscanf(pin, "%ms", &ret);
             invoke = TRUE;
@@ -387,7 +390,7 @@ static const gchar *_find_device_pin(const gchar *device_path)
     return NULL;
 }
 
-void register_agent_callbacks(gboolean interactive_console, GHashTable *pin_dictonary, gpointer main_loop_object, GError **error)
+void register_agent_callbacks(gboolean interactive_console, gboolean deamonize, GHashTable *pin_dictonary, gpointer main_loop_object, GError **error)
 {
     GDBusInterfaceVTable bt_agent_table;
     memset(&bt_agent_table, 0x0, sizeof(bt_agent_table));
@@ -398,6 +401,7 @@ void register_agent_callbacks(gboolean interactive_console, GHashTable *pin_dict
         _mainloop = (GMainLoop *) main_loop_object;
 
     _interactive = interactive_console;
+    _deamonize = deamonize;
 
     GDBusNodeInfo *bt_agent_node_info = g_dbus_node_info_new_for_xml(_bt_agent_introspect_xml, error);
     GDBusInterfaceInfo *bt_agent_interface_info = g_dbus_node_info_lookup_interface(bt_agent_node_info, AGENT_DBUS_INTERFACE);

@@ -37,7 +37,7 @@ extern "C" {
 
 gboolean agent_need_unregister;
 
-void register_agent_callbacks(gboolean interactive_console, GHashTable *pin_dictonary, gpointer main_loop_object, GError **error);
+void register_agent_callbacks(gboolean interactive_console, gboolean deamonize, GHashTable *pin_dictonary, gpointer main_loop_object, GError **error);
 void unregister_agent_callbacks(GError **error);
 
 #ifdef	__cplusplus

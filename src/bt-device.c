@@ -540,7 +540,7 @@ int main(int argc, char *argv[])
         
         agent_need_unregister = TRUE;
         
-        register_agent_callbacks(TRUE, NULL, mainloop, &error);
+        register_agent_callbacks(TRUE, FALSE, NULL, mainloop, &error);
         exit_if_error(error);
         
         agent_manager_register_agent(agent_manager, AGENT_PATH, "DisplayYesNo", &error);

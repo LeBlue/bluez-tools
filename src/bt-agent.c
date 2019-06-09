@@ -153,11 +153,13 @@ term_signal_handler(gpointer data)
 
 static gchar *capability_arg = NULL;
 static gboolean daemon_arg = FALSE;
+static gboolean noninteractive_arg = FALSE;
 
 static GOptionEntry entries[] = {
 	{"capability", 'c', 0, G_OPTION_ARG_STRING, &capability_arg, "Agent capability", "<capability>"},
 	{"pin", 'p', 0, G_OPTION_ARG_STRING, &pin_arg, "Path to the PIN's file"},
 	{"daemon", 'd', 0, G_OPTION_ARG_NONE, &daemon_arg, "Run in background (as daemon)"},
+	{"non-interactive", 'n', 0, G_OPTION_ARG_NONE, &noninteractive_arg, "Run non-interactive in the foreground (don't ask, if not found in PIN's file)"},
 	{NULL}
 };
 
@@ -228,6 +230,9 @@ int main(int argc, char *argv[])
         {
 		pin_hash_table = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 		_read_pin_file(pin_arg, pin_hash_table, TRUE);
+	} else if (noninteractive_arg || daemon_arg) {
+		g_printerr("No PIN's file given, needed for 'demonize' or non-interactive\n");
+		exit(EXIT_FAILURE);
 	}
 
 	mainloop = g_main_loop_new(NULL, FALSE);
@@ -237,10 +242,12 @@ int main(int argc, char *argv[])
         AgentManager *agent_manager = agent_manager_new();
 
         if(daemon_arg)
-            register_agent_callbacks(FALSE, pin_hash_table, mainloop, &error);
+            register_agent_callbacks(FALSE, FALSE, pin_hash_table, mainloop, &error);
+        else if (!noninteractive_arg)
+            register_agent_callbacks(TRUE, FALSE, pin_hash_table, mainloop, &error);
         else
-            register_agent_callbacks(TRUE, pin_hash_table, mainloop, &error);
-        
+            register_agent_callbacks(FALSE, FALSE, pin_hash_table, mainloop, &error);
+
         exit_if_error(error);
         
         agent_manager_register_agent(agent_manager, AGENT_PATH, capability_arg, &error);

@@ -13,6 +13,7 @@ Application Options:
   -c, --capability=<capability>
   -p, --pin
   -d, --daemon
+  -n, --non-interactive
 
 =head1 DESCRIPTION
 
@@ -43,6 +44,11 @@ B<-p, --pin E<lt>file path<gt>>
 B<-d, --daemon>
     Run the agent as a background process (as a daemon).
     The agent will rely on a pin file and request no manual user authorization. Any devices that attempt to pair without a valid passkey defined in the pin file will be automatically rejected.
+
+B<-n, --non-interactive>
+    Run the agent in the foreground, but non-interactive, does not ask for input of passkeys or authorization, if not covered by the PIN's file.
+    If the flag is not given, the agent will rely on a pin file and request manual user authorization.
+
 
 =head1 AUTHOR
 
